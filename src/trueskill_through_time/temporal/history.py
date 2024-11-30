@@ -1,9 +1,11 @@
-import trueskill_through_time.config
-from trueskill_through_time.game.team import Agent
-from trueskill_through_time.temporal.batch import Batch
-from trueskill_through_time.core.player import Player
-import trueskill_through_time.utils.sorting as sorting
-from trueskill_through_time.core.gaussian import *
+
+from ..config import *
+from ..game.team import Agent, clean
+from ..temporal.batch import Batch
+from ..core.player import Player
+from ..utils.sorting import *
+from ..core.gaussian import *
+from ..utils.validation import *
 from ..config import *
 
 class History(object):
@@ -24,10 +26,12 @@ class History(object):
         
     def __repr__(self):
         return "History(Events={}, Batches={}, Agents={})".format(self.size,len(self.batches),len(self.agents))
+    
     def __len__(self):
         return self.size
+    
     def trueskill(self, composition, results, times, weights):
-        o = sorting.sortperm(times) if len(times)>0 else [i for i in range(len(composition))]
+        o = sortperm(times) if len(times)>0 else [i for i in range(len(composition))]
         i = 0
         while i < len(self):
             j, t = i+1, i+1 if len(times) == 0 else times[o[i]]
@@ -41,6 +45,7 @@ class History(object):
                 self.agents[a].last_time = t if self.time else inf
                 self.agents[a].message = b.forward_prior_out(a)
             i = j
+
     def iteration(self):
         step = (0., 0.)
         clean(self.agents)
@@ -62,8 +67,8 @@ class History(object):
             old = self.batches[0].posteriors().copy()
             self.batches[0].convergence()
             step = max_tuple(step, dict_diff(old, self.batches[0].posteriors()))
-        
         return step
+    
     def convergence(self, epsilon = EPSILON, iterations = ITERATIONS, verbose=True):
         step = (inf, inf); i = 0
         while gr_tuple(step, epsilon) and (i < iterations):
