@@ -42,6 +42,19 @@ def pdf(x, mu, sigma):
 def ppf(p, mu, sigma):
     return mu - sigma * sqrt2 * erfcinv(2 * p)
 
+def v_w(mu, sigma, margin,tie):
+    if not tie:
+        _alpha = (margin-mu)/sigma
+        v = pdf(-_alpha,0,1) / cdf(-_alpha,0,1)
+        w = v * (v + (-_alpha))
+    else:
+        _alpha = (-margin-mu)/sigma
+        _beta  = ( margin-mu)/sigma
+        v = (pdf(_alpha,0,1)-pdf(_beta,0,1))/(cdf(_beta,0,1)-cdf(_alpha,0,1))
+        u = (_alpha*pdf(_alpha,0,1)-_beta*pdf(_beta,0,1))/(cdf(_beta,0,1)-cdf(_alpha,0,1))
+        w =  - ( u - v**2 ) 
+    return v, w
+
 def mu_sigma(tau_, pi_):
     if pi_ > 0.0:
         sigma = math.sqrt(1/pi_)
@@ -59,3 +72,15 @@ def tau_pi(mu, sigma):
         pi_ = inf
         tau_ = inf
     return tau_, pi_
+
+
+
+def trunc(mu, sigma, margin, tie):
+    v, w = v_w(mu, sigma, margin, tie)
+    mu_trunc = mu + sigma * v
+    sigma_trunc = sigma * math.sqrt(1-w)
+    return mu_trunc, sigma_trunc
+
+def approx(N, margin, tie):
+    mu, sigma = trunc(N.mu, N.sigma, margin, tie)
+    return Gaussian(mu, sigma)

@@ -1,7 +1,7 @@
 # core/gaussian.py
 import math
 from ..config import MU, SIGMA
-from .math_utils import inf
+from .math_utils import inf, mu_sigma
 
 class Gaussian(object):
     """
@@ -71,9 +71,7 @@ class Gaussian(object):
         return Gaussian(self.mu - M.mu, math.sqrt(self.sigma**2 - M.sigma**2) )
     def isapprox(self, M, tol=1e-4):
         return (abs(self.mu - M.mu) < tol) and (abs(self.sigma - M.sigma) < tol)
-    
-    
-__all__ = ['Gaussian']
+     
 N01 = Gaussian(0,1)
 N00 = Gaussian(0,0)
 Ninf = Gaussian(0,inf)

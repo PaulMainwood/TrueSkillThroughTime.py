@@ -1,4 +1,10 @@
-from trueskill_through_time.config import MU, SIGMA, BETA, GAMMA, P_DRAW, EPSILON, ITERATIONS 
+import trueskill_through_time.config
+from trueskill_through_time.game.team import Agent
+from trueskill_through_time.temporal.batch import Batch
+from trueskill_through_time.core.player import Player
+import trueskill_through_time.utils.sorting as sorting
+from trueskill_through_time.core.gaussian import *
+from ..config import *
 
 class History(object):
     def __init__(self,composition, results=[], times=[], priors=dict(), mu=MU, sigma=SIGMA, beta=BETA, gamma=GAMMA, p_draw=P_DRAW, weights=[]):
@@ -21,7 +27,7 @@ class History(object):
     def __len__(self):
         return self.size
     def trueskill(self, composition, results, times, weights):
-        o = sortperm(times) if len(times)>0 else [i for i in range(len(composition))]
+        o = sorting.sortperm(times) if len(times)>0 else [i for i in range(len(composition))]
         i = 0
         while i < len(self):
             j, t = i+1, i+1 if len(times) == 0 else times[o[i]]
@@ -79,5 +85,3 @@ class History(object):
         return res
     def log_evidence(self):
         return sum([math.log(event.evidence) for b in self.batches for event in b.events])
-    
-__all__ = ['History']

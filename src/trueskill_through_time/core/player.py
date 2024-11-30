@@ -1,5 +1,6 @@
-from ..config import MU, SIGMA, BETA, GAMMA
-from .gaussian import Gaussian
+from ..config import *
+from .gaussian import *
+from math import sqrt, inf
 
 class Player:
     def __init__(self, prior=Gaussian(MU, SIGMA), beta=BETA, gamma=GAMMA, prior_draw=None):
@@ -11,7 +12,7 @@ class Player:
     def performance(self):
         return Gaussian(
             self.prior.mu,
-            math.sqrt(self.prior.sigma**2 + self.beta**2)
+            sqrt(self.prior.sigma**2 + self.beta**2)
         )
         
     def __repr__(self):

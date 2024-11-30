@@ -1,3 +1,8 @@
+from ..utils.sorting import sortperm
+from .team import *
+from ..core.math_utils import *
+from ..core.gaussian import Gaussian
+
 class Game(object):
     def __init__(self, teams, result = [], p_draw=0.0, weights=[]):
         if len(result) and (len(teams) != len(result)): raise ValueError("len(result) and (len(teams) != len(result))")
