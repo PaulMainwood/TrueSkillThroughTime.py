@@ -46,6 +46,44 @@ class History(object):
                 self.agents[a].message = b.forward_prior_out(a)
             i = j
 
+    def add_games(self, composition, results=[], times=[]):
+        """
+        Adds new games to an existing History.
+        
+        Args:
+            composition: List of team compositions for each game
+            results: Optional list of game results. If empty, assumes games ordered 
+                    from winner to loser
+            times: Optional list of times when games occurred. If empty, assumes 
+                sequential order
+        """
+        # Input validation matching __init__
+        if (len(results) > 0) and (len(composition) != len(results)):
+            raise ValueError("len(composition) != len(results)")
+        if (len(times) > 0) and (len(composition) != len(times)):
+            raise ValueError("len(times) error")
+        
+        # Find any new players
+        new_players = set()
+        for teams in composition:
+            for team in teams:
+                for player in team:
+                    if player not in self.agents:
+                        new_players.add(player)
+        
+        # Initialize new agents
+        for player in new_players:
+            self.agents[player] = Agent(Player(Gaussian(self.mu, self.sigma), self.gamma), Ninf, -inf)
+
+       # Store original size and temporarily adjust size for trueskill method
+        original_size = self.size
+        self.size = len(composition)  # Set size to just the new games
+        
+        try:
+            self.trueskill(composition, results, times, [])
+        finally:
+            self.size = original_size + len(composition)  # Restore total size
+
     def iteration(self):
         step = (0., 0.)
         clean(self.agents)
@@ -78,6 +116,42 @@ class History(object):
             if verbose: print(", step = ", step)
         if verbose: print("End")
         return step, i
+    
+    def iterate_on_matches(self, matchups, timestamps, iterations=5):
+        """
+        Performs iterations only on batches containing specified matchups.
+        
+        Args:
+            matchups: List of matchups in format [[player1], [player2]]
+            timestamps: List of times when matchups occurred
+            iterations: Number of iterations to perform
+        """
+        # Find which batches contain our target times
+        unique_times = set(timestamps)
+        active_batches = [i for i, batch in enumerate(self.batches) 
+                            if batch.time in unique_times]
+        
+        # Do iterations only on these batches
+        for iteration in range(iterations):
+            print("Limited iteration:", iteration)
+            # Backward pass
+            clean(self.agents)
+            for j in reversed(range(len(active_batches)-1)):
+                current_batch = self.batches[active_batches[j]]
+                next_batch = self.batches[active_batches[j+1]]
+                for a in next_batch.skills:
+                    self.agents[a].message = next_batch.backward_prior_out(a)
+                current_batch.new_backward_info()
+                
+            # Forward pass
+            clean(self.agents)
+            for j in range(1, len(active_batches)):
+                current_batch = self.batches[active_batches[j]]
+                prev_batch = self.batches[active_batches[j-1]]
+                for a in prev_batch.skills:
+                    self.agents[a].message = prev_batch.forward_prior_out(a)
+                current_batch.new_forward_info()
+    
     def learning_curves(self):
         res = dict()
         for b in self.batches:
@@ -88,5 +162,6 @@ class History(object):
                 else:
                     res[a] = [t_p]
         return res
+    
     def log_evidence(self):
         return sum([math.log(event.evidence) for b in self.batches for event in b.events])
